@@ -20,14 +20,15 @@ end
 using BenchmarkTools
 
 ray = (
-    position = @SVector[0.0,-100],
-    velocity = @SVector[0.0,1],
+    position = @SVector[0.0,-100, -100],
+    velocity = @SVector[0.0, 1,1],
 )
 
-edgs = (-2:5.0, -10:0.1:2.0)
+edgs = (-2:100.0, -50:50.0, -10:0.1:2.0)
 itr = eachvoxelentry(ray, edgs)
 truthy(x) = true
-res = @btime $count($truthy, $itr)
-@show res
+b = @benchmark $count($truthy, $itr)
+@test b.allocs == 0
+show(b)
 
 end#module

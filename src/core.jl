@@ -59,11 +59,11 @@ function Base.iterate(prob::EachVoxelEntered, index)
             xs[i]
         end
     end
-    
+
     ts = map(Tuple(prob.position), Tuple(prob.invvelocity), walls) do pos, invvel, x
         (x - pos) * invvel
     end::Tuple
-    
+
     t = nanminimum(ts)
     @assert t > 0
     new_index = map(index, ts, prob.signs) do i, ti, sign 
@@ -119,7 +119,7 @@ function interval_enter_exit_time(pos, vel, (x_left, x_right))
 end
 
 function enter_exit_time(pos, vel, limits)
-    ts = map(interval_enter_exit_time, pos, vel, limits)
+    ts = map(interval_enter_exit_time, Tuple(pos), Tuple(vel), Tuple(limits))::Tuple
     enter_time = maximum(first, ts)
     exit_time = minimum(last, ts)
     enter_time, exit_time

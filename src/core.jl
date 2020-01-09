@@ -21,7 +21,7 @@ function eachvoxelentry(ray, edges)
     EachVoxelEntered(edges, ray.position, ray.velocity)
 
 end
-function EachVoxelEntered(edges::NTuple{N}, position::AbstractVector{T}, velocity::AbstractVector{T}) where {N,T}
+function EachVoxelEntered(edges::NTuple{N, AbstractVector}, position::AbstractVector{T}, velocity::AbstractVector{T}) where {N,T}
     @argcheck norm(velocity) > 0
     @argcheck length(edges) == length(position) == length(velocity)
     invvelocity = map(velocity) do vel
@@ -51,13 +51,10 @@ function Base.iterate(prob::EachVoxelEntered)
     end
 end
 
-function Base.iterate(prob::EachVoxelEntered, index)
+@inline function Base.iterate(prob::EachVoxelEntered, index)
     walls::Tuple = map(index, prob.signs, prob.edges) do i, sign, xs
-        if sign > 0
-            xs[i+1]
-        else
-            xs[i]
-        end
+        iwall = ifelse(sign > 0, i+1, i)
+        xs[iwall]
     end
 
     ts = map(Tuple(prob.position), Tuple(prob.invvelocity), walls) do pos, invvel, x
@@ -66,12 +63,8 @@ function Base.iterate(prob::EachVoxelEntered, index)
 
     t = nanminimum(ts)
     @assert t > 0
-    new_index = map(index, ts, prob.signs) do i, ti, sign 
-        if t == ti
-            i + sign
-        else
-            i
-        end
+    new_index = map(index, ts, prob.signs) do i, ti, sign
+        ifelse(t == ti, i + sign, i)::Int
     end
     @assert new_index != index
     isinside = all(map(new_index, prob.edges) do i, xs

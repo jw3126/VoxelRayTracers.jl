@@ -1,5 +1,6 @@
 module VoxelRayTracers
 
-greet() = print("Hello World!")
+include("core.jl")
+include("plots.jl")
 
 end # module

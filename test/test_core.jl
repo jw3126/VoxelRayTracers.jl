@@ -66,7 +66,7 @@ for s in 1:100
     itr = eachtraversal(ray, edgs)
     collect(itr)
 end
-edgs = (-2:100.0, -50:50.0, sort!(randn(100)))
+edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 100)))
 itr = eachtraversal(ray, edgs)
 # foreach(println, itr)
 truthy(x) = true

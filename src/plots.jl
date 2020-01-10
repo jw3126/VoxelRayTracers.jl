@@ -1,6 +1,6 @@
 using RecipesBase
 
-@recipe function plot(o::EachVoxelEntered{2})
+@recipe function plot(o::EachTraversal{2})
     hits = collect(o)
     @series begin
         seriestype := :vline

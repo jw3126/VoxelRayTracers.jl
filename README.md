@@ -25,9 +25,15 @@ end
 (voxelindex = CartesianIndex(9, 3), entry_time = 8.0, exit_time = 9.0)
 (voxelindex = CartesianIndex(10, 3), entry_time = 9.0, exit_time = 10.0)
 ```
-
+There is also some basic visualization useful for debugging:
 ```julia
 using Plots
 plot(eachtraversal(ray, edges))
 ```
 ![example](example.png)
+
+# Design goals
+
+* Lightweight and simple
+* Support arbitrary dimension and non uniform grids
+* Reasonable performance

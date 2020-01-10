@@ -29,6 +29,26 @@ using Test
     ]
 end
 
+@testset "diagonal2d" begin
+    ray = (position=@SVector[0.0, 0.0], velocity=@SVector[1.0, 1.0])
+    edges = ([1,3,4],1:4)
+    itr = @inferred eachtraversal(ray, edges)
+    @test collect(itr) == [
+     (voxelindex = CartesianIndex(1, 1), entry_time = 1.0, exit_time = 2.0),
+     (voxelindex = CartesianIndex(1, 2), entry_time = 2.0, exit_time = 3.0),
+     (voxelindex = CartesianIndex(2, 3), entry_time = 3.0, exit_time = 4.0),
+    ]
+end
+
+@testset "spurious intersection 2d" begin
+    ray = (position=@SVector[0.0, 5.0], velocity=@SVector[1.0, -2.0])
+    edges = ([1, 10],[-10,3,4])
+    itr = @inferred eachtraversal(ray, edges)
+    @test collect(itr) == [
+        (voxelindex = CartesianIndex(1, 1), entry_time = 1.0, exit_time = 7.5) 
+    ]
+end
+
 # exit()
 
 using BenchmarkTools
@@ -42,7 +62,7 @@ using Random
 rng = MersenneTwister(1)
 for s in 1:100
     Random.seed!(rng, s)
-    edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 2)))
+    edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 100)))
     itr = eachtraversal(ray, edgs)
     collect(itr)
 end

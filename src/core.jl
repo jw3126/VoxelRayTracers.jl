@@ -26,7 +26,7 @@ function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVecto
     @argcheck length(edges) == length(position) == length(velocity)
     invvelocity = map(velocity) do vel
         if vel == 0
-            typeof(vel)(Inf)
+            typeof(vel)(NaN)
         else
             inv(vel)
         end
@@ -60,20 +60,18 @@ end
     end::Tuple
 
     exit_time = nanminimum(ts)
-    @assert (exit_time > state.entry_time)
-    # @show state
-    # @show walls
-    # @show ts
-
-    #     error()
-    # end
     new_voxelindex = map(state.voxelindex, ts, tracer.signs) do i, ti, sign
         ifelse(exit_time == ti, i + sign, i)::Int
     end
     @assert new_voxelindex != state.voxelindex
     item = (voxelindex=CartesianIndex(state.voxelindex), entry_time = state.entry_time, exit_time=exit_time)
     new_state = (voxelindex=new_voxelindex, entry_time=exit_time, stop_time=state.stop_time)
-    return item, new_state
+    if state.entry_time == exit_time
+        # do not allow spurious intersections
+        return iterate(tracer, new_state)
+    else
+        return item, new_state
+    end
 end
 
 function nanminimum(ts)

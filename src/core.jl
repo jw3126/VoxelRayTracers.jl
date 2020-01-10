@@ -14,7 +14,7 @@ end
 
 Base.IteratorSize(::Type{<:EachTraversal}) = Base.SizeUnknown()
 function Base.eltype(::Type{<:EachTraversal{N,T}}) where {N,T}
-    NamedTuple{(:index, :entry_time, :exit_time), Tuple{CartesianIndex{N}, T, T}}
+    NamedTuple{(:voxelindex, :entry_time, :exit_time), Tuple{CartesianIndex{N}, T, T}}
 end
 
 function eachtraversal(ray, edges)
@@ -41,8 +41,8 @@ function Base.iterate(tracer::EachTraversal)
     t_entry, t_exit = enter_exit_time(tracer.position, tracer.velocity, limits)
     t_entry = max(t_entry, zero(t_entry))
     pos = t_entry * tracer.velocity + tracer.position
-    index = _containing_bin_index(pos, tracer.edges, tracer.signs)::Tuple
-    state = (index=index, entry_time=t_entry, stop_time=t_exit)
+    voxelindex = _start_voxelindex(pos, tracer.edges)::Tuple
+    state = (voxelindex=voxelindex, entry_time=t_entry, stop_time=t_exit)
     iterate(tracer, state)
 end
 
@@ -50,7 +50,7 @@ end
     if state.entry_time >= state.stop_time
         return nothing
     end
-    walls::Tuple = map(state.index, tracer.signs, tracer.edges) do ivoxel, sign, xs
+    walls::Tuple = map(state.voxelindex, tracer.signs, tracer.edges) do ivoxel, sign, xs
         iwall = ifelse(sign <= 0, ivoxel, ivoxel+1)
         xs[iwall]
     end
@@ -67,12 +67,12 @@ end
 
     #     error()
     # end
-    new_index = map(state.index, ts, tracer.signs) do i, ti, sign
+    new_voxelindex = map(state.voxelindex, ts, tracer.signs) do i, ti, sign
         ifelse(exit_time == ti, i + sign, i)::Int
     end
-    @assert new_index != state.index
-    item = (index=CartesianIndex(state.index), entry_time = state.entry_time, exit_time=exit_time)
-    new_state = (index=new_index, entry_time=exit_time, stop_time=state.stop_time)
+    @assert new_voxelindex != state.voxelindex
+    item = (voxelindex=CartesianIndex(state.voxelindex), entry_time = state.entry_time, exit_time=exit_time)
+    new_state = (voxelindex=new_voxelindex, entry_time=exit_time, stop_time=state.stop_time)
     return item, new_state
 end
 
@@ -82,14 +82,11 @@ function nanminimum(ts)
     end
 end
 
-function _containing_bin_index(pos, edges, signs)
-    map(_containing_interval_index, Tuple(pos), edges, signs)
-end
-
-function _containing_interval_index(pos, walls, sign)
-    # TODO this is hacky
-    index = searchsortedlast(walls, pos)
-    clamp(index, firstindex(walls), lastindex(walls) - 1)
+function _start_voxelindex(pos, edges)
+    map(Tuple(pos), edges) do pos, walls
+    	voxelindex = searchsortedlast(walls, pos)
+    	clamp(voxelindex, firstindex(walls), lastindex(walls) - 1)
+    end
 end
 
 function interval_enter_exit_time(pos, vel, (x_left, x_right))

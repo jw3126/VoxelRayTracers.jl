@@ -12,9 +12,9 @@ using Test
     hits = @inferred collect(itr)
     @test eltype(hits) == typeof(first(hits))
     @test hits == [
-        (index = CartesianIndex(3, 1), entry_time = 90.0, exit_time = 94.0),
-        (index = CartesianIndex(3, 2), entry_time = 94.0, exit_time = 98.0),
-        (index = CartesianIndex(3, 3), entry_time = 98.0, exit_time = 102.0),
+        (voxelindex = CartesianIndex(3, 1), entry_time = 90.0, exit_time = 94.0),
+        (voxelindex = CartesianIndex(3, 2), entry_time = 94.0, exit_time = 98.0),
+        (voxelindex = CartesianIndex(3, 3), entry_time = 98.0, exit_time = 102.0),
     ]
 
     ray = (position=@SVector[100.0], velocity=@SVector[-1.0])
@@ -23,9 +23,9 @@ using Test
     hits = collect(itr)
     # foreach(println, hits)
     @test hits == [
-        (index = CartesianIndex(3), entry_time = 98.0, exit_time = 102.0),
-        (index = CartesianIndex(2), entry_time = 102.0, exit_time = 106.0),
-        (index = CartesianIndex(1), entry_time = 106.0, exit_time = 110.0),
+        (voxelindex = CartesianIndex(3), entry_time = 98.0, exit_time = 102.0),
+        (voxelindex = CartesianIndex(2), entry_time = 102.0, exit_time = 106.0),
+        (voxelindex = CartesianIndex(1), entry_time = 106.0, exit_time = 110.0),
     ]
 end
 

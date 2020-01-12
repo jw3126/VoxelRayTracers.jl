@@ -3,9 +3,20 @@ export eachtraversal
 using LinearAlgebra
 using ArgCheck
 
-@inline function map(f, args::NTuple{N, Any}...)::NTuple{N} where {N}
-    Base.map(f, args...)
-end
+# @inline function map(f, args::NTuple{N, Any}...)::NTuple{N} where {N}
+#     Base.map(f, args...)
+# end
+
+# for dim in 1:5,
+#     for nargs in 1:5
+#         args = [Symbol("args$i") for i in 1:nargs]
+#         function map(f, $([:($arg::NTuple{$dim}) for arg in args]...))::$(NTuple{dim})
+#
+#
+#         end
+#
+#     end
+# end
 
 struct EachTraversal{N,T, E <: Tuple}
     edges::E
@@ -24,6 +35,7 @@ function eachtraversal(ray, edges)
     EachTraversal(edges, ray.position, ray.velocity)
 
 end
+
 function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVector{T}, velocity::AbstractVector{T}) where {N,T}
     @argcheck norm(velocity) > 0
     @argcheck length(edges) == length(position) == length(velocity)
@@ -48,8 +60,10 @@ function Base.iterate(tracer::EachTraversal)
     end
     t_entry, t_exit = enter_exit_time(tracer.position, tracer.velocity, limits)
     t_entry = max(t_entry, zero(t_entry))
-    pos = map(tracer.position, tracer.velocity) do pos, vel
-        t_entry * vel + pos
+    pos = let t_entry = t_entry
+        map(tracer.position, tracer.velocity) do pos, vel
+            t_entry * vel + pos
+        end
     end
     voxelindex = _start_voxelindex(pos, tracer.edges)::Tuple
     state = (voxelindex=voxelindex, entry_time=t_entry, stop_time=t_exit)
@@ -76,13 +90,12 @@ end
     @assert new_voxelindex != state.voxelindex
     item = (voxelindex=CartesianIndex(state.voxelindex), entry_time = state.entry_time, exit_time=exit_time)
     new_state = (voxelindex=new_voxelindex, entry_time=exit_time, stop_time=state.stop_time)
-    return item, new_state
-    # if state.entry_time == exit_time
-    #     # do not allow spurious intersections
-    #     return iterate(tracer, new_state)
-    # else
-    #     return item, new_state
-    # end
+    if state.entry_time == exit_time
+        # do not allow spurious intersections
+        return iterate(tracer, new_state)
+    else
+        return item, new_state
+    end
 end
 
 function nanminimum(ts)

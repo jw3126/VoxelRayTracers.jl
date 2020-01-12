@@ -110,19 +110,5 @@ end
     end
 end
 
-using BenchmarkTools
-ray = (
-    position = [0.01,-100, -100],
-    velocity = [0.001, 1,1],
-)
-edgs = (-2:100.0, -50:50.0, sort!(randn(100)))
-itr = @inferred eachtraversal(ray, edgs)
-# foreach(println, itr)
-truthy(x) = true
-b = @benchmark $count($truthy, $itr)
-display(b)
-@test b.allocs == 0
-@show count(truthy, itr)
-
 
 end#module

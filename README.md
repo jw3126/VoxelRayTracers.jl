@@ -9,10 +9,9 @@
 
 ```julia
 using VoxelRayTracers
-using StaticArrays
 
 edges = (0:1:10, 4:2:10,)
-ray = (position=@SVector[0.0,0], velocity=@SVector[1,1.0])
+ray = (position=[0.0,0], velocity=[1,1.0])
 for hit in eachtraversal(ray, edges)
     println(hit)
 end

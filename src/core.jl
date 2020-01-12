@@ -1,14 +1,17 @@
 export eachtraversal
 
-using StaticArrays
 using LinearAlgebra
 using ArgCheck
 
-struct EachTraversal{N,T, E}
+@inline function map(f, args::NTuple{N, Any}...)::NTuple{N} where {N}
+    Base.map(f, args...)
+end
+
+struct EachTraversal{N,T, E <: Tuple}
     edges::E
-    position::SVector{N, T}
-    velocity::SVector{N, T}
-    invvelocity::SVector{N, T}
+    position::NTuple{N, T}
+    velocity::NTuple{N, T}
+    invvelocity::NTuple{N, T}
     signs::NTuple{N,Int}
 end
 
@@ -24,6 +27,9 @@ end
 function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVector{T}, velocity::AbstractVector{T}) where {N,T}
     @argcheck norm(velocity) > 0
     @argcheck length(edges) == length(position) == length(velocity)
+    Tup = NTuple{N, T}
+    velocity = Tup(velocity)
+    position = Tup(position)
     invvelocity = map(velocity) do vel
         if vel == 0
             typeof(vel)(NaN)
@@ -31,16 +37,20 @@ function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVecto
             inv(vel)
         end
     end
-    signs = map(Int∘sign, Tuple(velocity))
+    signs = map(Int∘sign, velocity)
     E = typeof(edges)
     EachTraversal{N,T,E}(edges, position, velocity, invvelocity, signs)
 end
 
 function Base.iterate(tracer::EachTraversal)
-    limits = map(extrema, tracer.edges)
+    limits = map(tracer.edges) do xs
+        first(xs), last(xs)
+    end
     t_entry, t_exit = enter_exit_time(tracer.position, tracer.velocity, limits)
     t_entry = max(t_entry, zero(t_entry))
-    pos = t_entry * tracer.velocity + tracer.position
+    pos = map(tracer.position, tracer.velocity) do pos, vel
+        t_entry * vel + pos
+    end
     voxelindex = _start_voxelindex(pos, tracer.edges)::Tuple
     state = (voxelindex=voxelindex, entry_time=t_entry, stop_time=t_exit)
     iterate(tracer, state)
@@ -55,7 +65,7 @@ end
         xs[iwall]
     end
 
-    ts = map(Tuple(tracer.position), Tuple(tracer.invvelocity), walls) do pos, invvel, wall
+    ts = map(tracer.position, tracer.invvelocity, walls) do pos, invvel, wall
         (wall - pos) * invvel
     end::Tuple
 
@@ -66,12 +76,13 @@ end
     @assert new_voxelindex != state.voxelindex
     item = (voxelindex=CartesianIndex(state.voxelindex), entry_time = state.entry_time, exit_time=exit_time)
     new_state = (voxelindex=new_voxelindex, entry_time=exit_time, stop_time=state.stop_time)
-    if state.entry_time == exit_time
-        # do not allow spurious intersections
-        return iterate(tracer, new_state)
-    else
-        return item, new_state
-    end
+    return item, new_state
+    # if state.entry_time == exit_time
+    #     # do not allow spurious intersections
+    #     return iterate(tracer, new_state)
+    # else
+    #     return item, new_state
+    # end
 end
 
 function nanminimum(ts)
@@ -81,9 +92,9 @@ function nanminimum(ts)
 end
 
 function _start_voxelindex(pos, edges)
-    map(Tuple(pos), edges) do pos, walls
-    	voxelindex = searchsortedlast(walls, pos)
-    	clamp(voxelindex, firstindex(walls), lastindex(walls) - 1)
+    map(pos, edges) do pos, walls
+        voxelindex = searchsortedlast(walls, pos)
+        clamp(voxelindex, firstindex(walls), lastindex(walls) - 1)
     end
 end
 
@@ -105,9 +116,8 @@ function interval_enter_exit_time(pos, vel, (x_left, x_right))
 end
 
 function enter_exit_time(pos, vel, limits)
-    ts = map(interval_enter_exit_time, Tuple(pos), Tuple(vel), Tuple(limits))::Tuple
+    ts = map(interval_enter_exit_time, pos, vel, limits)::Tuple
     enter_time = maximum(first, ts)
     exit_time = minimum(last, ts)
     enter_time, exit_time
 end
-

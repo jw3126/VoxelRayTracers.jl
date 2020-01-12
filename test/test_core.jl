@@ -2,6 +2,33 @@ module TestCore
 using StaticArrays, VoxelRayTracers
 using Test
 
+using BenchmarkTools
+
+ray = (
+    position = @SVector[0.01,-100, -100],
+    velocity = @SVector[0.001, 1,1],
+)
+
+using Random
+rng = MersenneTwister(1)
+for s in 1:100
+    Random.seed!(rng, s)
+    edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 100)))
+    itr = eachtraversal(ray, edgs)
+    collect(itr)
+end
+edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 100)))
+itr = @inferred eachtraversal(ray, edgs)
+# foreach(println, itr)
+truthy(x) = true
+b = @benchmark $count($truthy, $itr)
+display(b)
+b = @benchmark $count($truthy, $itr)
+show(b)
+@test b.allocs == 0
+@show count(truthy, itr)
+
+
 @testset "eachtraversal" begin
     @testset "2d" begin
         pos = @SVector[0.0,-100]
@@ -83,29 +110,5 @@ using Test
 end
 
 # exit()
-
-using BenchmarkTools
-
-ray = (
-    position = @SVector[0.01,-100, -100],
-    velocity = @SVector[0.001, 1,1],
-)
-
-using Random
-rng = MersenneTwister(1)
-for s in 1:100
-    Random.seed!(rng, s)
-    edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 100)))
-    itr = eachtraversal(ray, edgs)
-    collect(itr)
-end
-edgs = (-2:100.0, -50:50.0, sort!(randn(rng, 100)))
-itr = eachtraversal(ray, edgs)
-# foreach(println, itr)
-truthy(x) = true
-b = @benchmark $count($truthy, $itr)
-@test b.allocs == 0
-@show count(truthy, itr)
-show(b)
 
 end#module

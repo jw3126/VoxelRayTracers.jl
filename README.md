@@ -11,7 +11,7 @@
 using VoxelRayTracers
 
 edges = (0:1:10, 4:2:10,)
-ray = (position=[0.0,0], velocity=[1,1.0])
+ray = (position=[0,0], velocity=[1,1])
 for hit in eachtraversal(ray, edges)
     println(hit)
 end
@@ -33,6 +33,6 @@ plot(eachtraversal(ray, edges))
 
 # Design goals
 
-* Lightweight and simple
+* Lightweight, simple and fun
 * Support arbitrary dimension and non uniform grids
 * Reasonable performance

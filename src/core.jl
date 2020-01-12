@@ -44,6 +44,7 @@ function Base.iterate(tracer::EachTraversal)
         first(xs), last(xs)
     end
     t_entry, t_exit = enter_exit_time(tracer.position, tracer.velocity, limits)
+    @assert t_exit > t_entry
     t_entry = max(t_entry, zero(t_entry))
     pos = let t_entry = t_entry
         map(tracer.position, tracer.velocity) do pos, vel
@@ -52,7 +53,17 @@ function Base.iterate(tracer::EachTraversal)
     end
     voxelindex = _start_voxelindex(pos, tracer.edges)::Tuple
     state = (voxelindex=voxelindex, entry_time=t_entry, stop_time=t_exit)
-    iterate(tracer, state)
+    while true
+        # do not allow spurious intersections
+        res = iterate(tracer, state)
+        res == nothing && return res
+        new_item, new_state = res
+        @assert new_state.voxelindex != state.voxelindex
+        if new_item.entry_time != new_item.exit_time
+            return res
+        end
+        state = new_state
+    end
 end
 
 @inline function Base.iterate(tracer::EachTraversal, state)
@@ -72,15 +83,9 @@ end
     new_voxelindex = map(state.voxelindex, ts, tracer.signs) do i, ti, sign
         ifelse(exit_time == ti, i + sign, i)::Int
     end
-    @assert new_voxelindex != state.voxelindex
     item = (voxelindex=CartesianIndex(state.voxelindex), entry_time = state.entry_time, exit_time=exit_time)
     new_state = (voxelindex=new_voxelindex, entry_time=exit_time, stop_time=state.stop_time)
-    if state.entry_time == exit_time
-        # do not allow spurious intersections
-        return iterate(tracer, new_state)
-    else
-        return item, new_state
-    end
+    item, new_state
 end
 
 function nanminimum(ts)

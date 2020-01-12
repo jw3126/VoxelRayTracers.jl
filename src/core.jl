@@ -3,21 +3,6 @@ export eachtraversal
 using LinearAlgebra
 using ArgCheck
 
-# @inline function map(f, args::NTuple{N, Any}...)::NTuple{N} where {N}
-#     Base.map(f, args...)
-# end
-
-# for dim in 1:5,
-#     for nargs in 1:5
-#         args = [Symbol("args$i") for i in 1:nargs]
-#         function map(f, $([:($arg::NTuple{$dim}) for arg in args]...))::$(NTuple{dim})
-#
-#
-#         end
-#
-#     end
-# end
-
 struct EachTraversal{N,T, E <: Tuple}
     edges::E
     position::NTuple{N, T}
@@ -33,12 +18,12 @@ end
 
 function eachtraversal(ray, edges)
     EachTraversal(edges, ray.position, ray.velocity)
-
 end
 
-function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVector{T}, velocity::AbstractVector{T}) where {N,T}
+function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVector, velocity::AbstractVector) where {N}
     @argcheck norm(velocity) > 0
     @argcheck length(edges) == length(position) == length(velocity)
+    T = typeof(first(position) / first(velocity))
     Tup = NTuple{N, T}
     velocity = Tup(velocity)
     position = Tup(position)

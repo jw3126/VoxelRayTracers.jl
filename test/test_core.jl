@@ -93,6 +93,23 @@ end
     item, state = @inferred Nothing iterate(itr, state)
 end
 
+@testset "eltype" begin
+    for (P,V,E,T) in [
+                      (Float32, Float32, Float32, Float32),
+                      (Float64, Float64, Float64, Float64),
+                      (Int64, Int64, Int64, Float64),
+                      (Float64, Int64, Float32, Float64),
+                   ]
+        ray = (position=P[0,], velocity=V[1])
+        edges = (E[1,2,3],)
+        itr = @inferred eachtraversal(ray, edges)
+        item, state = @inferred Nothing iterate(itr)
+        item, state = @inferred Nothing iterate(itr, state)
+        @test typeof(item.entry_time) == T
+        @test typeof(item.exit_time) == T
+    end
+end
+
 using BenchmarkTools
 ray = (
     position = [0.01,-100, -100],

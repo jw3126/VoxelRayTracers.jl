@@ -44,7 +44,8 @@ function Base.iterate(tracer::EachTraversal)
         first(xs), last(xs)
     end
     t_entry, t_exit = enter_exit_time(tracer.position, tracer.velocity, limits)
-    @assert t_exit > t_entry
+    @assert t_exit >= t_entry
+    t_entry == t_exit && return nothing # e.g. touch corner
     t_entry = max(t_entry, zero(t_entry))
     pos = let t_entry = t_entry
         map(tracer.position, tracer.velocity) do pos, vel

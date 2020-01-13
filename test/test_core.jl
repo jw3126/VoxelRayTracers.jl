@@ -2,8 +2,42 @@ module TestCore
 using VoxelRayTracers
 using Test
 
-@testset "eachtraversal" begin
-    @testset "2d" begin
+@testset "1d" begin
+    @testset "default" begin
+        ray = (position=[100.0], velocity=[-1.0])
+        edges = ([-10, -6.0, -2.0, 2.0], )
+        itr = eachtraversal(ray, edges)
+        hits = collect(itr)
+        @test hits == [
+            (voxelindex = CartesianIndex(3), entry_time = 98.0, exit_time = 102.0),
+            (voxelindex = CartesianIndex(2), entry_time = 102.0, exit_time = 106.0),
+            (voxelindex = CartesianIndex(1), entry_time = 106.0, exit_time = 110.0),
+        ]
+    end
+
+    @testset "no hits" begin
+        ray = (position=[3.0], velocity=[1.0])
+        edges = (-3:2,)
+        itr = @inferred eachtraversal(ray, edges)
+        hits = @inferred collect(itr)
+        @test isempty(hits)
+    end
+
+    @testset "start inside" begin
+        ray = (position=[3.0], velocity=[1.0])
+        edges = ([0, 2, 4, 6, 7],)
+        itr = @inferred eachtraversal(ray, edges)
+        hits = @inferred collect(itr)
+        @test hits == [
+            (voxelindex = CartesianIndex(2,), entry_time = 0.0, exit_time = 1.0),
+            (voxelindex = CartesianIndex(3,), entry_time = 1.0, exit_time = 3.0),
+            (voxelindex = CartesianIndex(4,), entry_time = 3.0, exit_time = 4.0),
+            ]
+    end
+end
+
+@testset "2d" begin
+    @testset "default" begin
         pos = [0.0,-100]
         vel = [0.0,1]
 
@@ -18,39 +52,8 @@ using Test
             (voxelindex = CartesianIndex(3, 3), entry_time = 98.0, exit_time = 102.0),
         ]
     end
-    @testset "1d" begin
-        ray = (position=[100.0], velocity=[-1.0])
-        edges = ([-10, -6.0, -2.0, 2.0], )
-        itr = eachtraversal(ray, edges)
-        hits = collect(itr)
-        @test hits == [
-            (voxelindex = CartesianIndex(3), entry_time = 98.0, exit_time = 102.0),
-            (voxelindex = CartesianIndex(2), entry_time = 102.0, exit_time = 106.0),
-            (voxelindex = CartesianIndex(1), entry_time = 106.0, exit_time = 110.0),
-        ]
-    end
 
-    @testset "1d no hits" begin
-        ray = (position=[3.0], velocity=[1.0])
-        edges = (-3:2,)
-        itr = @inferred eachtraversal(ray, edges)
-        hits = @inferred collect(itr)
-        @test isempty(hits)
-    end
-
-    @testset "1d start inside" begin
-        ray = (position=[3.0], velocity=[1.0])
-        edges = ([0, 2, 4, 6, 7],)
-        itr = @inferred eachtraversal(ray, edges)
-        hits = @inferred collect(itr)
-        @test hits == [
-            (voxelindex = CartesianIndex(2,), entry_time = 0.0, exit_time = 1.0),
-            (voxelindex = CartesianIndex(3,), entry_time = 1.0, exit_time = 3.0),
-            (voxelindex = CartesianIndex(4,), entry_time = 3.0, exit_time = 4.0),
-            ]
-    end
-
-    @testset "diagonal2d" begin
+    @testset "diagonal" begin
         ray = (position=[0.0, 0.0], velocity=[1.0, 1.0])
         edges = ([1,3,4],1:4)
         itr = @inferred eachtraversal(ray, edges)
@@ -61,7 +64,7 @@ using Test
         ]
     end
 
-    @testset "spurious intersection 2d" begin
+    @testset "spurious intersection" begin
         ray = (position=[0.0, 5.0], velocity=[1.0, -2.0])
         edges = ([1, 10],[-10,3,4])
         itr = @inferred eachtraversal(ray, edges)
@@ -70,17 +73,25 @@ using Test
         ]
     end
 
-    @testset "3d" begin
-        ray = (position=[10.0, 20, 30], velocity=[1.0, -1.0, -2])
-        edges = ([11, 13, 14, 20], [5, 17, 18], [10, 25])
-        itr = @inferred eachtraversal(ray, edges)
-        @test collect(itr) == [
-            (voxelindex = CartesianIndex(1, 2, 1), entry_time = 2.5, exit_time = 3.0),
-            (voxelindex = CartesianIndex(2, 1, 1), entry_time = 3.0, exit_time = 4.0),
-            (voxelindex = CartesianIndex(3, 1, 1), entry_time = 4.0, exit_time = 10.0),
-        ]
+    @testset "no hits, touch corner" begin
+        ray = (position=[0,0], velocity=[1,1])
+        edges = ([1,2], [-3,1])
+        hits = eachtraversal(ray, edges)
+        @test isempty(hits)
     end
 end
+
+@testset "3d" begin
+    ray = (position=[10.0, 20, 30], velocity=[1.0, -1.0, -2])
+    edges = ([11, 13, 14, 20], [5, 17, 18], [10, 25])
+    itr = @inferred eachtraversal(ray, edges)
+    @test collect(itr) == [
+        (voxelindex = CartesianIndex(1, 2, 1), entry_time = 2.5, exit_time = 3.0),
+        (voxelindex = CartesianIndex(2, 1, 1), entry_time = 3.0, exit_time = 4.0),
+        (voxelindex = CartesianIndex(3, 1, 1), entry_time = 4.0, exit_time = 10.0),
+    ]
+end
+
 
 @testset "inference" begin
     ray = (

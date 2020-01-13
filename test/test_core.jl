@@ -34,9 +34,19 @@ using Test
             (voxelindex = CartesianIndex(4,), entry_time = 3.0, exit_time = 4.0),
             ]
     end
+
+    @testset "start inside last voxel" begin
+        ray = (position=[0], velocity=[1])
+        edges = ([-2, 1],)
+        hits = collect(eachtraversal(ray, edges))
+        @test hits == [
+            (voxelindex = CartesianIndex(1,), entry_time = 0.0, exit_time = 1.0),
+        ]
+    end
 end
 
 @testset "2d" begin
+
     @testset "default" begin
         pos = [0.0,-100]
         vel = [0.0,1]
@@ -64,7 +74,7 @@ end
         ]
     end
 
-    @testset "spurious intersection" begin
+    @testset "simultaneous entry on boundary wall and inner wall" begin
         ray = (position=[0.0, 5.0], velocity=[1.0, -2.0])
         edges = ([1, 10],[-10,3,4])
         itr = @inferred eachtraversal(ray, edges)
@@ -76,6 +86,13 @@ end
     @testset "no hits, touch corner" begin
         ray = (position=[0,0], velocity=[1,1])
         edges = ([1,2], [-3,1])
+        hits = eachtraversal(ray, edges)
+        @test isempty(hits)
+    end
+
+    @testset "no hits, enter dim1 after leave dim2" begin
+        ray = (position=[0,0], velocity=[1,2])
+        edges = ([10, 11], [10,11])
         hits = eachtraversal(ray, edges)
         @test isempty(hits)
     end

@@ -43,11 +43,11 @@ function Base.iterate(tracer::EachTraversal)
     limits = map(tracer.edges) do xs
         first(xs), last(xs)
     end
-    t_entry, t_exit = enter_exit_time(tracer.position, tracer.velocity, limits)
-    @assert t_exit >= t_entry
-    t_entry == t_exit && return nothing # e.g. touch corner
+    t_entry, t_exit = entry_exit_time(tracer.position, tracer.velocity, limits)
     t_entry = max(t_entry, zero(t_entry))
-    pos = let t_entry = t_entry
+    # no intersection / only touch
+    t_entry >= t_exit && return nothing
+    pos = let t_entry = t_entry # closure bug, this is needed for inference
         map(tracer.position, tracer.velocity) do pos, vel
             t_entry * vel + pos
         end
@@ -102,7 +102,7 @@ function _start_voxelindex(pos, edges)
     end
 end
 
-function interval_enter_exit_time(pos, vel, (x_left, x_right))
+function interval_entry_exit_time(pos, vel, (x_left, x_right))
     invvel = 1/vel
     if vel == 0
         T = typeof((x_left  - pos) *invvel)
@@ -119,9 +119,9 @@ function interval_enter_exit_time(pos, vel, (x_left, x_right))
     end
 end
 
-function enter_exit_time(pos, vel, limits)
-    ts = map(interval_enter_exit_time, pos, vel, limits)::Tuple
-    enter_time = maximum(first, ts)
+function entry_exit_time(pos, vel, limits)
+    ts = map(interval_entry_exit_time, pos, vel, limits)::Tuple
+    entry_time = maximum(first, ts)
     exit_time = minimum(last, ts)
-    enter_time, exit_time
+    entry_time, exit_time
 end

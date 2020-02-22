@@ -59,7 +59,7 @@ function Base.iterate(tracer::EachTraversal)
     while true
         # do not allow spurious intersections
         res = iterate(tracer, state)
-        res == nothing && return res
+        res === nothing && return res
         new_item, new_state = res
         @assert new_state.voxelindex != state.voxelindex
         if new_item.entry_time != new_item.exit_time

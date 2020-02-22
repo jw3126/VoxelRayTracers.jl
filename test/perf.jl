@@ -31,5 +31,28 @@ end
 #     ret
 # end
 #
+#
+#
+
+@testset "eachtraversal no allocs $dim" for dim in 1:3
+    nwalls = 20
+    edges = (range(-10, stop=10, length=nwalls) for _ in 1:dim)
+    edges = tuple(edges...)
+    ray = (position=randn(dim), velocity=randn(dim))
+    data = randn((nwalls - 1 for _ in 1:dim)...)
+
+    function raysum(ray, edges, data)
+        out = 0.0
+        for i in 1:1000
+            for hit in eachtraversal(ray, edges)
+                out += data[hit.voxelindex]
+            end
+        end
+        out
+    end
+
+    b = @benchmark $raysum($ray, $edges, $data) samples=1 evals=1
+    @test b.allocs < 100
+end
 
 end#module

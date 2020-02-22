@@ -34,7 +34,9 @@ function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVecto
             inv(vel)
         end
     end
-    signs = map(Int∘sign, velocity)
+    signs = map(velocity) do v
+        Int(sign(v))
+    end
     E = typeof(edges)
     EachTraversal{N,T,E}(edges, position, velocity, invvelocity, signs)
 end

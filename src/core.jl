@@ -16,17 +16,40 @@ function Base.eltype(::Type{<:EachTraversal{N,T}}) where {N,T}
     NamedTuple{(:voxelindex, :entry_time, :exit_time), Tuple{CartesianIndex{N}, T, T}}
 end
 
+"""
+    hits = eachtraversal(ray, edges)
+
+Compute the traversal of `ray` through a grid that is the produce of `edges`.
+
+# Example
+
+```jldoctest
+julia> using VoxelRayTracers
+
+julia> edges = (0:1:10, 4:2:10,);
+
+julia> ray = (position=[0,0], velocity=[1,1]);
+
+julia> for hit in eachtraversal(ray, edges)
+           println(hit)
+       end
+(voxelindex = CartesianIndex(5, 1), entry_time = 4.0, exit_time = 5.0)
+(voxelindex = CartesianIndex(6, 1), entry_time = 5.0, exit_time = 6.0)
+(voxelindex = CartesianIndex(7, 2), entry_time = 6.0, exit_time = 7.0)
+(voxelindex = CartesianIndex(8, 2), entry_time = 7.0, exit_time = 8.0)
+(voxelindex = CartesianIndex(9, 3), entry_time = 8.0, exit_time = 9.0)
+(voxelindex = CartesianIndex(10, 3), entry_time = 9.0, exit_time = 10.0)
+```
+"""
 function eachtraversal(ray, edges)
     EachTraversal(edges, ray.position, ray.velocity)
 end
 
-function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVector, velocity::AbstractVector) where {N}
+function EachTraversal(edges::NTuple{N, AbstractVector},
+                       position::NTuple{N,T},
+                       velocity::NTuple{N,T}
+                      ) where {T,N}
     @argcheck norm(velocity) > 0
-    @argcheck length(edges) == length(position) == length(velocity)
-    T = typeof(first(position) / first(velocity))
-    Tup = NTuple{N, T}
-    velocity = Tup(velocity)
-    position = Tup(position)
     invvelocity = map(velocity) do vel
         if vel == 0
             typeof(vel)(NaN)
@@ -39,6 +62,15 @@ function EachTraversal(edges::NTuple{N, AbstractVector}, position::AbstractVecto
     end
     E = typeof(edges)
     EachTraversal{N,T,E}(edges, position, velocity, invvelocity, signs)
+end
+
+function EachTraversal(edges::NTuple{N, AbstractVector}, position, velocity) where {N}
+    @argcheck length(edges) == length(position) == length(velocity)
+    T = typeof(first(position) / first(velocity))
+    Tup = NTuple{N, T}
+    velocity = Tup(velocity)
+    position = Tup(position)
+    EachTraversal(edges, position, velocity)
 end
 
 function Base.iterate(tracer::EachTraversal)

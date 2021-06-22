@@ -2,6 +2,16 @@ module TestCore
 using VoxelRayTracers
 using Test
 
+@testset "conversion" begin
+    ray1 = (position=(1f0, 2f0), velocity=(1f0, 0f0))
+    ray2 = (position=[1f0, 2f0], velocity=(1, 0))
+    edges = (2f0:10f0, -3f0:3f0)
+    @test eachtraversal(ray1, edges) == eachtraversal(ray2, edges)
+    hit = first(eachtraversal(ray1, edges))
+    @test hit.entry_time isa Float32
+    @test hit.exit_time isa Float32
+end
+
 @testset "1d" begin
     @testset "default" begin
         ray = (position=[100.0], velocity=[-1.0])

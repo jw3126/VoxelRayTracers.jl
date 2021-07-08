@@ -36,8 +36,7 @@ end
 
 @testset "eachtraversal no allocs $dim" for dim in 1:3
     nwalls = 20
-    edges = (range(-10, stop=10, length=nwalls) for _ in 1:dim)
-    edges = tuple(edges...)
+    edges = Tuple(range(-10, stop=10, length=nwalls) for _ in 1:dim)
     ray = (position=randn(dim), velocity=randn(dim))
     data = randn((nwalls - 1 for _ in 1:dim)...)
 

@@ -68,9 +68,7 @@ function EachTraversal(edges::NTuple{N, AbstractVector}, position, velocity) whe
     @argcheck length(edges) == length(position) == length(velocity)
     T = typeof(first(position) / first(velocity))
     Tup = NTuple{N, T}
-    velocity = Tup(velocity)
-    position = Tup(position)
-    EachTraversal(edges, position, velocity)
+    EachTraversal(edges, Tup(position), Tup(velocity))
 end
 
 function Base.iterate(tracer::EachTraversal)

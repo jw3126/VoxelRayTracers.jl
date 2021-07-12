@@ -1,6 +1,5 @@
 export eachtraversal
 using LinearAlgebra
-using ArgCheck
 
 """
     hits = eachtraversal(ray, edges)
@@ -134,24 +133,26 @@ end
 
 int_sign(x)::Int = Int(sign(x))
 function next_wallhit(o::WallHit)
-    dim          = argmin(o.hittimes)
-    time_new     = o.hittimes[dim]
-    position_new = let Δt = time_new-o.time
-        map(o.velocity, o.position) do vel, pos
-            vel*Δt + pos
+    @inbounds begin
+        dim          = argmin(o.hittimes)
+        time_new     = o.hittimes[dim]
+        position_new = let Δt = time_new-o.time
+            map(o.velocity, o.position) do vel, pos
+                vel*Δt + pos
+            end
         end
+        s = int_sign(o.velocity[dim])
+        index_dim    = o.index[dim]+s
+        index_new    = Base.setindex(o.index, index_dim, dim)
+        hittime_new  = o.hittimes[dim] + o.voxel_traversal_times[dim][index_dim]
+        hittimes_new = Base.setindex(o.hittimes, hittime_new, dim)
+        WallHit(o,
+            position=position_new,
+            time=time_new,
+            index=index_new,
+            hittimes=hittimes_new,
+        )
     end
-    s = int_sign(o.velocity[dim])
-    index_dim    = o.index[dim]+s
-    index_new    = Base.setindex(o.index, index_dim, dim)
-    hittime_new  = o.hittimes[dim] + o.voxel_traversal_times[dim][index_dim]
-    hittimes_new = Base.setindex(o.hittimes, hittime_new, dim)
-    WallHit(o,
-        position=position_new,
-        time=time_new,
-        index=index_new,
-        hittimes=hittimes_new,
-    )
 end
 
 function enter(focus, velocity, edges)
@@ -251,7 +252,7 @@ end
 
 function _first_wallhit(position, velocity, edges, index, time)
     limits = map(edges, index) do r, i
-        (r[i], r[i+1])
+        @inbounds (r[i], r[i+1])
     end
     hittimes = let time = time
         map(position, velocity, limits) do pos, vel, lims
@@ -288,9 +289,7 @@ function is_inbound_voxelindex(o::EachTraversal, index::Tuple)
 end
 
 function Base.iterate(o::EachTraversal, entry_state::WallHit)
-    if !is_inbound_voxelindex(o, entry_state.index)
-        return nothing
-    end
+    is_inbound_voxelindex(o, entry_state.index) || return nothing
     exit_state = next_wallhit(entry_state)
     item::eltype(o) = (
         voxelindex=CartesianIndex(entry_state.index),
@@ -300,13 +299,11 @@ function Base.iterate(o::EachTraversal, entry_state::WallHit)
     item, exit_state
 end
 
-function limited_collect(itr, n)
-    ret = eltype(itr)[]
-    i = 0
-    for x in itr
-        i+= 1
-        i > n && break
-        push!(ret, x)
-    end
-    return ret
-end
+################################################################################
+##### Adapt
+################################################################################
+import Adapt
+Adapt.@adapt_structure EachTraversal
+Adapt.@adapt_structure WallHit
+Adapt.@adapt_structure TraversalTime_Vector
+Adapt.@adapt_structure TraversalTime_Range

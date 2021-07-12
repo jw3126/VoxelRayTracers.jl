@@ -1,4 +1,5 @@
 using RecipesBase
+using ArgCheck
 
 function addline!(xs, ys, from, to)
     x_from, y_from = from
@@ -68,4 +69,3 @@ end
     end
     xs, ys
 end
-

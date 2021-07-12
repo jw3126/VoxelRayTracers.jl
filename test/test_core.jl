@@ -7,6 +7,15 @@ function collect_nonzero_voxels(itr)
         hit.exit_time != hit.entry_time
     end
 end
+    #ray = (
+    #    position = [0.01,-100, -100],
+    #    velocity = [0.001, 1,1],
+    #)
+    #edgs = (-2:100.0, -50:50.0, sort!(randn(100)))
+    #itr = @inferred eachtraversal(ray, edgs)
+    #item, state = @inferred Nothing iterate(itr)
+    #item, state = @inferred Nothing iterate(itr, state)
+    #error()
 
 @testset "1d" begin
     @testset "left to right" begin

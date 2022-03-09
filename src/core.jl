@@ -155,12 +155,16 @@ function next_wallhit(o::WallHit)
     end
 end
 
-function enter(focus, velocity, edges)
-    entry_time, exit_time = entry_exit_time(focus, velocity, edges)
+"""
+    enter(ray, edges)
+
+"""
+function enter(ray, edges)
+    entry_time, exit_time = entry_exit_time(ray.position, ray.velocity, edges)
     if exit_time >= 0
         time = max(entry_time,zero(entry_time))
         position = let time=time
-            map(focus, velocity) do foc, vel
+            map(ray.position, ray.velocity) do foc, vel
                 foc + time * vel
             end
         end

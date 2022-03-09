@@ -55,7 +55,19 @@ function interval_entry_exit_time(pos, vel, walls)
     end
 end
 
-function entry_exit_time(pos, vel, limits)
+"""
+
+    entry_time, exit_time = entry_exit_time(ray, limits)
+    entry_time, exit_time = entry_exit_time(ray, edges)
+
+Calculate entry and exit time of `ray` with respect to the box spanned by the second argument.
+"""
+function entry_exit_time(ray, limits::NTuple{N,Any}) where {N}
+    lims, pos, vel = promote_edges_position_velocity(limits, ray.position, ray.velocity)
+    entry_time, exit_time = _entry_exit_time(pos, vel, lims)
+    (entry_time=entry_time, exit_time=exit_time)
+end
+function _entry_exit_time(pos, vel, limits)
     ts = map(interval_entry_exit_time, pos, vel, limits)::Tuple
     entry_time = maximum(first, ts)
     exit_time = minimum(last, ts)
@@ -155,28 +167,8 @@ function next_wallhit(o::WallHit)
     end
 end
 
-"""
-    enter(ray, edges)
-
-"""
-function enter(ray, edges)
-    entry_time, exit_time = entry_exit_time(ray.position, ray.velocity, edges)
-    if exit_time >= 0
-        time = max(entry_time,zero(entry_time))
-        position = let time=time
-            map(ray.position, ray.velocity) do foc, vel
-                foc + time * vel
-            end
-        end
-        index = _start_voxelindex(position, edges)
-        return (;position, index, time)
-    else
-        return nothing
-    end
-end
-
 function grid_entry_time(focus, velocity, edges) # this might not be on a wall
-    entry_time, exit_time = entry_exit_time(focus, velocity, edges)
+    entry_time, exit_time = _entry_exit_time(focus, velocity, edges)
     max.(entry_time, zero(entry_time))
 end
 
@@ -185,15 +177,21 @@ struct EachTraversal{N,T,E}
     position::NTuple{N,T}
     velocity::NTuple{N,T}
     function EachTraversal(edges::NTuple{N,Any}, position, velocity) where {N}
-        E = typeof(edges)
-        x1 = sum(first,edges)
-        x2 = sum(position)
-        x3 = sum(velocity)
-        T = typeof(x1 + x2 / x3)
-        pos = _makeNTuple(NTuple{N,T}, position)
-        vel = _makeNTuple(NTuple{N,T}, velocity)
-        new{N,T,E}(edges, pos, vel)
+        edgs, pos, vel = promote_edges_position_velocity(edges, position, velocity)
+        E = typeof(edgs)
+        T = eltype(pos)
+        new{N,T,E}(edgs, pos, vel)
     end
+end
+
+function promote_edges_position_velocity(edges::NTuple{N,Any}, position, velocity) where {N}
+    x1 = sum(first,edges)
+    x2 = sum(position)
+    x3 = sum(velocity)
+    T = typeof(x1 + x2 / x3)
+    pos = _makeNTuple(NTuple{N,T}, position)
+    vel = _makeNTuple(NTuple{N,T}, velocity)
+    return edges, pos, vel
 end
 
 function eachtraversal(ray, edges)

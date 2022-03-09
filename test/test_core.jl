@@ -12,21 +12,37 @@ using Test
     @inferred Nothing iterate(itr, state)
 end
 
+@testset "entry_exit_time" begin
+    entry_exit_time = VoxelRayTracers.entry_exit_time
+    t1, t2 = entry_exit_time(
+        (position=(0,), velocity=(1,)),
+        ((2,4),)
+    )
+    @test t1 ≈ 2
+    @test t2 ≈ 4
+
+    t1, t2 = entry_exit_time(
+        (position=(0,), velocity=(1,)),
+        ((-2,4),)
+    )
+    @test t1 ≈ -2
+    @test t2 ≈ 4
+
+
+    t1, t2 = entry_exit_time(
+        (position=(0,0), velocity=(1,10)),
+        ((-2,4),(10,50))
+    )
+    @test t1 ≈ 1
+    @test t2 ≈ 4
+end
+
 
 function collect_nonzero_voxels(itr)
     filter(collect(itr)) do hit
         hit.exit_time != hit.entry_time
     end
 end
-    #ray = (
-    #    position = [0.01,-100, -100],
-    #    velocity = [0.001, 1,1],
-    #)
-    #edgs = (-2:100.0, -50:50.0, sort!(randn(100)))
-    #itr = @inferred eachtraversal(ray, edgs)
-    #item, state = @inferred Nothing iterate(itr)
-    #item, state = @inferred Nothing iterate(itr, state)
-    #error()
 
 @testset "1d" begin
     @testset "left to right" begin
